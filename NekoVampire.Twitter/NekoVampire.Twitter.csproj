@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{42FFC78F-58BB-4D17-BB9D-4F9F05559D10}</ProjectGuid>
+    <ProjectGuid>{5405A6C3-DC0C-4738-94F0-5343DF45BCA1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NekoVampire.Web.OAuth</RootNamespace>
-    <AssemblyName>NekoVampire.Web.OAuth</AssemblyName>
+    <RootNamespace>NekoVampire.Twitter</RootNamespace>
+    <AssemblyName>NekoVampire.Twitter</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -45,17 +45,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="OAuthAccess.cs" />
+    <Compile Include="AccessTwitter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NekoVampire.Extension\NekoVampire.Extension.csproj">
-      <Project>{BAD97F56-7C94-4EF4-B34E-E693C0378576}</Project>
-      <Name>NekoVampire.Extension</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\NekoVampire.Web\NekoVampire.Web.csproj">
-      <Project>{F0327E5B-D0B4-4F08-9977-417597C7F510}</Project>
-      <Name>NekoVampire.Web</Name>
+    <ProjectReference Include="..\NekoVampire.Web.OAuth\NekoVampire.Web.OAuth.csproj">
+      <Project>{42FFC78F-58BB-4D17-BB9D-4F9F05559D10}</Project>
+      <Name>NekoVampire.Web.OAuth</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

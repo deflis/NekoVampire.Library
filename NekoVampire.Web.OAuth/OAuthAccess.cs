@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Security.Cryptography;
-using System.Security;
-using System.Runtime.InteropServices;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Cryptography;
+using System.Text;
 using NekoVampire.Extension.Collections;
 
 namespace NekoVampire.Web.OAuth
 {
-    class OAuthAccess
+    public class OAuthAccess
     {
         #region
         public string ConsumerKey { get { return consumerKey; } }
@@ -87,6 +87,10 @@ namespace NekoVampire.Web.OAuth
         }
         #endregion
 
+        /// <summary>
+        /// RequestToken を取得する。
+        /// </summary>
+        /// <returns>認証 URL。</returns>
         public string GetRequestToken()
         {
             var OAuthParameter = new Dictionary<string, string>();
@@ -112,7 +116,7 @@ namespace NekoVampire.Web.OAuth
                 using (Stream stream = e.Response.GetResponseStream())
                 using (StreamReader reader = new StreamReader(stream))
                 {
-                    return requestTokenURL + "?" + UriUtility.GetPostData(OAuthParameter, Enc);
+                    return requestTokenURL + "?" + RequestUtility.GetPostData(OAuthParameter, Enc);
                 }
             }
             requestToken = response[OAuthTokenKey];
@@ -121,9 +125,13 @@ namespace NekoVampire.Web.OAuth
                 requestTokenSecret.AppendChar(c);
             requestTokenSecret.MakeReadOnly();
 
-            return authorizeURL + "?" + OAuthTokenKey + "=" + UriUtility.EscapeUriString(requestToken);
+            return authorizeURL + "?" + OAuthTokenKey + "=" + RequestUtility.EscapeUriString(requestToken);
         }
 
+        /// <summary>
+        /// AccessToken を取得する。
+        /// </summary>
+        /// <param name="pin">PIN コード</param>
         public void GetAccessToken(string pin)
         {
             var OAuthParameter = new Dictionary<string, string>();
@@ -164,11 +172,11 @@ namespace NekoVampire.Web.OAuth
 
         protected string GenerateSignature(string url, string method, List<QueryParameter> query, SecureString tokenSecret)
         {
-            StringBuilder key = new StringBuilder(UriUtility.EscapeUriString(consumerSecret)).Append("&");
+            StringBuilder key = new StringBuilder(RequestUtility.EscapeUriString(consumerSecret)).Append("&");
             if (tokenSecret != null)
             {
                 var bstr = Marshal.SecureStringToBSTR(tokenSecret);
-                key.Append(UriUtility.EscapeUriString(Marshal.PtrToStringBSTR(bstr)));
+                key.Append(RequestUtility.EscapeUriString(Marshal.PtrToStringBSTR(bstr)));
                 Marshal.ZeroFreeBSTR(bstr);
             }
             var key_byte = Encoding.ASCII.GetBytes(key.ToString());
@@ -176,9 +184,9 @@ namespace NekoVampire.Web.OAuth
             query.Sort();
             var signaturebase = String.Format(
                 "{0}&{1}&{2}",
-                UriUtility.EscapeUriString(method),
-                UriUtility.EscapeUriString(url),
-                UriUtility.EscapeUriString(UriUtility.GetPostData(query.ToDictionary(value => value.Name,value => value.Value), Enc))
+                RequestUtility.EscapeUriString(method),
+                RequestUtility.EscapeUriString(url),
+                RequestUtility.EscapeUriString(RequestUtility.GetPostData(query.ToDictionary(value => value.Key, value => value.Value), Enc))
                 );
             return Convert.ToBase64String(hmac.ComputeHash(Encoding.ASCII.GetBytes(signaturebase)));
         }
@@ -198,14 +206,14 @@ namespace NekoVampire.Web.OAuth
             return GenerateSignature(url, method, query, tokenSecret);
         }
 
-        protected string GenerateSignature(string url, string method, IDictionary<string, string> OAuthParameter, IDictionary<string, string> postData, SecureString tokenSecret)
+        protected string GenerateSignature(string url, string method, IDictionary<string, string> OAuthParameter, IDictionary<string, string> queryDictionary, SecureString tokenSecret)
         {
             List<QueryParameter> query = new List<QueryParameter>();
             if (OAuthParameter != null)
                 foreach (var data in OAuthParameter)
                     query.Add(new QueryParameter(data.Key, data.Value));
-            if (postData != null)
-                foreach (var data in postData)
+            if (queryDictionary != null)
+                foreach (var data in queryDictionary)
                     query.Add(new QueryParameter(data.Key, data.Value));
             return GenerateSignature(url, method, query, tokenSecret);
         }
@@ -216,7 +224,7 @@ namespace NekoVampire.Web.OAuth
             Dictionary<string, string> dic = new Dictionary<string, string>();
             StringBuilder str = new StringBuilder("OAuth ");
             foreach (var data in new SortedDictionary<string, string>(OAuthParameter))
-                str.AppendFormat("{0}=\"{1}\",", UriUtility.EscapeUriString(data.Key), UriUtility.EscapeUriString(data.Value));
+                str.AppendFormat("{0}=\"{1}\",", RequestUtility.EscapeUriString(data.Key), RequestUtility.EscapeUriString(data.Value));
             str.Remove(str.Length - 1, 1);
             dic.Add("Authorization", str.ToString());
             return dic;
@@ -272,7 +280,25 @@ namespace NekoVampire.Web.OAuth
 
         public void HttpRequest(string url, string method, DateTime since, IDictionary<string, string> postData, Encoding enc, IDictionary<string, string> headers, Action<Stream> invoker)
         {
-            Dictionary<string, string> head = new Dictionary<string,string>(headers);
+            Dictionary<string, string> head = null;
+
+            var uri = new Uri(url);
+            Dictionary<string, string> queryDictionary;
+            if (postData != null)
+                queryDictionary = new Dictionary<string, string>(postData);
+            else
+                queryDictionary = new Dictionary<string, string>();
+            foreach (string query in uri.GetComponents(UriComponents.Query, UriFormat.UriEscaped).Split('&'))
+            {
+                if (query.IndexOf('=') > -1)
+                {
+                    string[] qs = query.Split('=');
+                    queryDictionary.Add(Uri.UnescapeDataString(qs[0]), Uri.UnescapeDataString(qs[1]));
+                }
+                else
+                    queryDictionary.Add(Uri.UnescapeDataString(query), "");
+            }
+
             Dictionary<string, string> OAuthParameter = new Dictionary<string, string>();
             OAuthParameter.Add(OAuthConsumerKeyKey, ConsumerKey);
             OAuthParameter.Add(OAuthTokenKey, AccessToken);
@@ -280,46 +306,10 @@ namespace NekoVampire.Web.OAuth
             OAuthParameter.Add(OAuthTimestampKey, GenereteTimestamp());
             OAuthParameter.Add(OAuthNonceKey, GenereteNonce());
             OAuthParameter.Add(OAuthVersionKey, OAuthVersion);
-            OAuthParameter.Add(OAuthSignatureKey, GenerateSignature(url, "POST", OAuthParameter, postData, accessTokenSecret));
-            foreach(var header in CreateAuthorizationHeader(url, OAuthParameter))
-                head.Add(header.Key,header.Value);
+            OAuthParameter.Add(OAuthSignatureKey, GenerateSignature(url, method, OAuthParameter, queryDictionary, accessTokenSecret));
 
-            try
-            {
-                req.HttpRequest(url, "POST", since, postData, Enc, head, invoker);
-            }
-            catch (WebException)
-            {
-                throw;
-            }
-
-        }
-
-        public void HttpRequest(string url, string method, DateTime since, IDictionary<string, string> postData, Encoding enc, IDictionary<string, string> headers, Action<Stream> invoker)
-        {
-            Dictionary<string, string> head = null;
-
-            if (method == "POST")
-            {
-                Dictionary<string, string> OAuthParameter = new Dictionary<string, string>();
-                OAuthParameter.Add(OAuthConsumerKeyKey, ConsumerKey);
-                OAuthParameter.Add(OAuthTokenKey, AccessToken);
-                OAuthParameter.Add(OAuthSignatureMethodKey, OAuthSignatureMethod);
-                OAuthParameter.Add(OAuthTimestampKey, GenereteTimestamp());
-                OAuthParameter.Add(OAuthNonceKey, GenereteNonce());
-                OAuthParameter.Add(OAuthVersionKey, OAuthVersion);
-                OAuthParameter.Add(OAuthSignatureKey, GenerateSignature(url, "POST", OAuthParameter, postData, accessTokenSecret));
-
-                if (headers != null)
-                {
-                    head = new Dictionary<string, string>(headers);
-                    head.AddRange
-                }
-                else
-                {
-                    head = CreateAuthorizationHeader(url, OAuthParameter);
-                }
-            }
+            head = CreateAuthorizationHeader(url, OAuthParameter);
+            head.AddRange(headers);
 
             try
             {
@@ -331,17 +321,234 @@ namespace NekoVampire.Web.OAuth
             }
         }
 
+        #region HttpRequest オーバロード
+        /// <summary>HTTPリクエストを行います</summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        public void HttpRequest(string url, string method)
+        {
+            HttpRequest(url, method, default(DateTime), null, null);
+        }
 
+        /// <summary>HTTPリクエストを行います</summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="since">IfModifiedSinceパラメータ</param>
+        public void HttpRequest(string url, string method, DateTime since)
+        {
+            HttpRequest(url, method, since, null, null);
+        }
+
+        /// <summary>HTTPリクエストを行います</summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="invoker">Streamを処理するメソッド</param>
+        public void HttpRequest(string url, string method, Action<Stream> invoker)
+        {
+            HttpRequest(url, method, default(DateTime), null, invoker);
+        }
+
+        /// <summary>HTTPリクエストを行います</summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="since">IfModifiedSinceパラメータ</param>
+        /// <param name="invoker">Streamを処理するメソッド</param>
+        public void HttpRequest(string url, string method, DateTime since, Action<Stream> invoker)
+        {
+            HttpRequest(url, method, since, null, invoker);
+        }
+
+        /// <summary>HTTPリクエストを行います</summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="postData">POSTで送信するデータ</param>
+        public void HttpRequest(string url, string method, IDictionary<string, string> postData)
+        {
+            HttpRequest(url, method, default(DateTime), postData, null);
+        }
+
+        /// <summary>HTTPリクエストを行います</summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="postData">POSTで送信するデータ</param>
+        /// <param name="invoker">Streamを処理するメソッド</param>
+        public void HttpRequest(string url, string method, IDictionary<string, string> postData, Action<Stream> invoker)
+        {
+            HttpRequest(url, method, default(DateTime), postData, invoker);
+        }
+
+        /// <summary>HTTPリクエストを行います</summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="since">IfModifiedSinceパラメータ</param>
+        /// <param name="postData">POSTで送信するデータ</param>
+        /// <param name="invoker">Streamを処理するメソッド</param>
+        public void HttpRequest(string url, string method, DateTime since, IDictionary<string, string> postData, Action<Stream> invoker)
+        {
+            HttpRequest(url, method, since, postData, Encoding.Default, invoker);
+        }
+
+        /// <summary>HTTPリクエストを行います</summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="since">IfModifiedSinceパラメータ</param>
+        /// <param name="postData">POSTで送信するデータ</param>
+        /// <param name="enc">文字エンコーディング</param>
+        /// <param name="invoker">Streamを処理するメソッド</param>
+        public void HttpRequest(string url, string method, DateTime since, IDictionary<string, string> postData, Encoding enc, Action<Stream> invoker)
+        {
+            HttpRequest(url, method, since, postData, enc, null, invoker);
+        }
+        #endregion
+
+        public void HttpRequestAsync(string url, string method, DateTime since, IDictionary<string, string> postData, Encoding enc, IDictionary<string, string> headers, Action<Stream> invoker)
+        {
+            Dictionary<string, string> head = null;
+
+            var uri = new Uri(url);
+            Dictionary<string, string> queryDictionary;
+            if (postData != null)
+                queryDictionary = new Dictionary<string, string>(postData);
+            else
+                queryDictionary = new Dictionary<string, string>();
+            foreach (string query in uri.GetComponents(UriComponents.Query, UriFormat.UriEscaped).Split('&'))
+            {
+                if (query.IndexOf('=') > -1)
+                {
+                    string[] qs = query.Split('=');
+                    queryDictionary.Add(Uri.UnescapeDataString(qs[0]), Uri.UnescapeDataString(qs[1]));
+                }
+                else
+                    queryDictionary.Add(Uri.UnescapeDataString(query), "");
+            }
+
+            Dictionary<string, string> OAuthParameter = new Dictionary<string, string>();
+            OAuthParameter.Add(OAuthConsumerKeyKey, ConsumerKey);
+            OAuthParameter.Add(OAuthTokenKey, AccessToken);
+            OAuthParameter.Add(OAuthSignatureMethodKey, OAuthSignatureMethod);
+            OAuthParameter.Add(OAuthTimestampKey, GenereteTimestamp());
+            OAuthParameter.Add(OAuthNonceKey, GenereteNonce());
+            OAuthParameter.Add(OAuthVersionKey, OAuthVersion);
+            OAuthParameter.Add(OAuthSignatureKey, GenerateSignature(url, method, OAuthParameter, queryDictionary, accessTokenSecret));
+
+            head = CreateAuthorizationHeader(url, OAuthParameter);
+            head.AddRange(headers);
+
+            try
+            {
+                req.HttpRequestAsync(url, method, since, postData, Enc, head, invoker);
+            }
+            catch (WebException)
+            {
+                throw;
+            }
+        }
+
+        #region HttpRequestAsync オーバロード
+        /// <summary>
+        /// 非同期でHTTPリクエストを行います
+        /// </summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        public void HttpRequestAsync(string url, string method)
+        {
+            HttpRequestAsync(url, method, default(DateTime), null);
+        }
+
+        /// <summary>
+        /// 非同期でHTTPリクエストを行います
+        /// </summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="callback">Streamを処理するコールバックメソッド</param>
+        public void HttpRequestAsync(string url, string method, Action<Stream> callback)
+        {
+            HttpRequestAsync(url, method, default(DateTime), null, callback);
+        }
+
+        /// <summary>
+        /// 非同期でHTTPリクエストを行います
+        /// </summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="since">IfModifiedSinceパラメータ</param>
+        public void HttpRequestAsync(string url, string method, DateTime since)
+        {
+            HttpRequestAsync(url, method, since, null, null);
+        }
+
+        /// <summary>
+        /// 非同期でHTTPリクエストを行います
+        /// </summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="since">IfModifiedSinceパラメータ</param>
+        /// <param name="callback">Streamを処理するコールバックメソッド</param>
+        public void HttpRequestAsync(string url, string method, DateTime since, Action<Stream> callback)
+        {
+            HttpRequestAsync(url, method, since, null, callback);
+        }
+
+        /// <summary>
+        /// 非同期でHTTPリクエストを行います
+        /// </summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="postData">POSTで送信するデータ</param>
+        public void HttpRequestAsync(string url, string method, IDictionary<string, string> postData)
+        {
+            HttpRequestAsync(url, method, default(DateTime), postData, null);
+        }
+
+        /// <summary>
+        /// 非同期でHTTPリクエストを行います
+        /// </summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="postData">POSTで送信するデータ</param>
+        /// <param name="callback">Streamを処理するコールバックメソッド</param>
+        public void HttpRequestAsync(string url, string method, IDictionary<string, string> postData, Action<Stream> callback)
+        {
+            HttpRequestAsync(url, method, default(DateTime), postData, callback);
+        }
+
+        /// <summary>
+        /// 非同期でHTTPリクエストを行います
+        /// </summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="since">IfModifiedSinceパラメータ</param>
+        /// <param name="postData">POSTで送信するデータ</param>
+        /// <param name="callback">AsyncCallback デリゲート。 </param>
+        public void HttpRequestAsync(string url, string method, DateTime since, IDictionary<string, string> postData, Action<Stream> callback)
+        {
+            HttpRequestAsync(url, method, since, postData, Encoding.Default, callback);
+        }
+
+        /// <summary>
+        /// 非同期でHTTPリクエストを行います
+        /// </summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="since">IfModifiedSinceパラメータ</param>
+        /// <param name="postData">POSTで送信するデータ</param>
+        /// <param name="enc">文字エンコーディング</param>
+        /// <param name="callback">Streamを処理するメソッド</param>
+        public void HttpRequestAsync(string url, string method, DateTime since, IDictionary<string, string> postData, Encoding enc, Action<Stream> callback)
+        {
+            HttpRequestAsync(url, method, since, postData, Encoding.Default, null, callback);
+        }
+        #endregion
 
         protected class QueryParameter : IComparable
         {
-            public QueryParameter(string name, string value)
+            public QueryParameter(string key, string value)
             {
-                this.Name = name;
+                this.Key = key;
                 this.Value = value;
             }
 
-            public string Name
+            public string Key
             {
                 get;
                 private set;
@@ -362,7 +569,7 @@ namespace NekoVampire.Web.OAuth
 
             public int CompareTo(QueryParameter qp)
             {
-                return this.Name != qp.Name ? this.Name.CompareTo(qp.Name) : this.Value.CompareTo(qp.Value);
+                return this.Key != qp.Key ? this.Key.CompareTo(qp.Key) : this.Value.CompareTo(qp.Value);
             }
 
             #endregion

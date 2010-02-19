@@ -44,7 +44,7 @@ using System.Collections.Generic;
 
 namespace NekoVampire.Web
 {
-    public class UriUtility
+    public class RequestUtility
     {
         /// <summary>
         /// URI 文字列を RFC3986 に基づいてエスケープ表現に変換します。 
@@ -99,7 +99,7 @@ namespace NekoVampire.Web
             {
                 foreach (var post in postData)
                 {
-                    str.Append("&" + post.Key + "=" + UriUtility.EscapeUriString(post.Value, encoding));
+                    str.Append("&" + post.Key + "=" + RequestUtility.EscapeUriString(post.Value, encoding));
                 }
                 str.Remove(0, 1);
             }

@@ -180,7 +180,7 @@ namespace NekoVampire.Web
         {
             if ((postData != null) && (postData.Count != 0) && (method != "POST"))
             {
-                url = url + "?" + UriUtility.GetPostData(postData, enc);
+                url = url + "?" + RequestUtility.GetPostData(postData, enc);
             }
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
@@ -322,14 +322,19 @@ namespace NekoVampire.Web
         /// <param name="since">IfModifiedSinceパラメータ</param>
         /// <param name="postData">POSTで送信するデータ</param>
         /// <param name="enc">文字エンコーディング</param>
-        /// <param name="invoker">Streamを処理するメソッド</param>
-        public void HttpRequestAsync(string url, string method, DateTime since, IDictionary<string, string> postData, Encoding enc, Action<Stream> callback)
+        /// <param name="headers">HTTPヘッダー</param>
+        /// <param name="callback">Streamを処理するメソッド</param>
+        public void HttpRequestAsync(string url, string method, DateTime since, IDictionary<string, string> postData, Encoding enc, IDictionary<string, string> headers, Action<Stream> callback)
         {
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
             req.Method = method;
             req.Credentials = Credentials;
             req.CookieContainer = Cookie;
             req.IfModifiedSince = since;
+
+            if (headers != null)
+                foreach (var header in headers)
+                    req.Headers.Add(header.Key, header.Value);
 
             if (postData != null)
             {
@@ -419,7 +424,6 @@ namespace NekoVampire.Web
         /// <param name="method">HTTPメソッド</param>
         /// <param name="postData">POSTで送信するデータ</param>
         /// <param name="callback">Streamを処理するコールバックメソッド</param>
-        /// <param name="state">このリクエストで使用する状態オブジェクト。 </param>
         public void HttpRequestAsync(string url, string method, IDictionary<string, string> postData, Action<Stream> callback)
         {
             HttpRequestAsync(url, method, default(DateTime), postData, callback);
@@ -437,6 +441,20 @@ namespace NekoVampire.Web
         {
             HttpRequestAsync(url, method, since, postData, Encoding.Default, callback);
         }
+
+        /// <summary>
+        /// 非同期でHTTPリクエストを行います
+        /// </summary>
+        /// <param name="url">URL</param>
+        /// <param name="method">HTTPメソッド</param>
+        /// <param name="since">IfModifiedSinceパラメータ</param>
+        /// <param name="postData">POSTで送信するデータ</param>
+        /// <param name="enc">文字エンコーディング</param>
+        /// <param name="callback">Streamを処理するメソッド</param>
+        public void HttpRequestAsync(string url, string method, DateTime since, IDictionary<string, string> postData, Encoding enc, Action<Stream> callback)
+        {
+            HttpRequestAsync(url, method, since, postData, Encoding.Default, null, callback);
+        }        
         #endregion
 
         /// <summary>
@@ -447,7 +465,7 @@ namespace NekoVampire.Web
         /// <returns>エンコードされたデータ</returns>
         private byte[] getEncodedPostData(IDictionary<string, string> postData, Encoding enc)
         {
-            return Encoding.ASCII.GetBytes(UriUtility.GetPostData(postData, enc));
+            return Encoding.ASCII.GetBytes(RequestUtility.GetPostData(postData, enc));
         }
 
         private void asyncCallback(IAsyncResult ar)
