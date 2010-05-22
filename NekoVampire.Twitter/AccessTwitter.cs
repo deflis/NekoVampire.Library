@@ -14,11 +14,11 @@ namespace NekoVampire.TwitterAccess
 
         #region コンストラクタ
         public AccessTwitter(string consumerKey, string consumerSecret)
-            : base(consumerKey, consumerSecret, API + "/oauth/request_token", API + "oauth/access_token", API + "oauth/authorize")
+            : base(consumerKey, consumerSecret, API + "oauth/request_token", API + "oauth/access_token", API + "oauth/authorize")
         { }
 
         public AccessTwitter(string consumerKey, string consumerSecret, string token, string tokenSecret)
-            : base(consumerKey, consumerSecret, API + "/oauth/request_token", API + "oauth/access_token", API + "oauth/authorize", token, tokenSecret)
+            : base(consumerKey, consumerSecret, API + "oauth/request_token", API + "oauth/access_token", API + "oauth/authorize", token, tokenSecret)
         { }
         #endregion
         

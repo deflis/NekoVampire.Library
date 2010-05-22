@@ -9,11 +9,12 @@ namespace NekoVampire.Crypt
     public class HMACSHA1
     {
         protected Byte[] KeyValue;
-        private SHA1 sha1 = new SHA1CryptoServiceProvider();
+        private SHA1 sha1;
         protected const int BlockSize = 64;
 
         public HMACSHA1(Byte[] key)
         {
+            sha1 = new SHA1CryptoServiceProvider();
             byte [] kv;
             if (key.Length > BlockSize)
             {
@@ -26,32 +27,33 @@ namespace NekoVampire.Crypt
             KeyValue = new Byte[BlockSize];
 
             kv.CopyTo(KeyValue, 0);
-
-            if (kv.Length < BlockSize)
-            {
-                for (int i = kv.Length; i < BlockSize; i++)
-                {
-                    KeyValue[i] = 0;
-                }
-            }
         }
 
         public Byte[] ComputeHash(Byte[] buffer)
         {
-            Byte[] keyOpad = new Byte[BlockSize];
-            Byte[] keyIpad = new Byte[BlockSize];
-            for( int i = 0 ; i < BlockSize ; i++ ) {
-                    keyOpad[i]^= 0x36 ;
-                    keyIpad[i]^= 0x5c ;
+            Byte[] keyOpad = (Byte[])KeyValue.Clone();
+            Byte[] keyIpad = (Byte[])KeyValue.Clone();
+            for (int i = 0; i < BlockSize; i++)
+            {
+                keyIpad[i] ^= 0x36;
+                keyOpad[i] ^= 0x5c;
             }
-            List<Byte> buf = new List<byte>(keyOpad);
-            buf.AddRange(buffer);
 
-            var hash = sha1.ComputeHash(buf.ToArray());
-            buf = new List<byte>(hash);
-            buf.AddRange(keyIpad);
+            Byte[] hash;
+            {
+                Byte[] inBuf = new Byte[keyIpad.Length + buffer.Length];
+                keyIpad.CopyTo(inBuf, 0);
+                buffer.CopyTo(inBuf, keyIpad.Length);
+                hash = sha1.ComputeHash(inBuf);
+            }
 
-            return sha1.ComputeHash(buf.ToArray());
+            {
+                Byte[] outBuf = new Byte[keyOpad.Length + hash.Length];
+                keyOpad.CopyTo(outBuf, 0);
+                hash.CopyTo(outBuf, keyOpad.Length);
+
+                return sha1.ComputeHash(outBuf);
+            }
         }
     }
 }

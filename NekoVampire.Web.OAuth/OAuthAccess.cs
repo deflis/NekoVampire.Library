@@ -167,7 +167,9 @@ namespace NekoVampire.Web.OAuth
 
         protected string GenerateSignature(string url, string method, List<QueryParameter> query, string tokenSecret)
         {
-            StringBuilder key = new StringBuilder(RequestUtility.EscapeUriString(consumerSecret)).Append("&").Append(RequestUtility.EscapeUriString(tokenSecret));
+            StringBuilder key = new StringBuilder(RequestUtility.EscapeUriString(consumerSecret)).Append("&");
+            if (tokenSecret != null)
+                key.Append(RequestUtility.EscapeUriString(tokenSecret));
             var key_byte = Encoding.ASCII.GetBytes(key.ToString());
             HMACSHA1 hmac = new HMACSHA1(key_byte);
             query.Sort();
