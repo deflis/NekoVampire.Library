@@ -8,6 +8,7 @@ using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using NekoVampire.Extension.Collections;
+using NekoVampire.Crypt;
 
 namespace NekoVampire.Web.OAuth
 {
@@ -43,9 +44,9 @@ namespace NekoVampire.Web.OAuth
         protected readonly Encoding Enc = Encoding.UTF8;
 
         private string requestToken;
-        private SecureString requestTokenSecret;
+        private string requestTokenSecret;
         private string accessToken;
-        private SecureString accessTokenSecret;
+        private string accessTokenSecret;
 
         public bool HasRequestToken { get { return requestToken != null; } }
         public bool HasAccessToken { get { return accessToken != null; } }
@@ -56,7 +57,7 @@ namespace NekoVampire.Web.OAuth
             private set { accessToken = value; }
         }
 
-        public SecureString AccessTokenSecret
+        public string AccessTokenSecret
         {
             get { return accessTokenSecret; }
             private set { accessTokenSecret = value; }
@@ -79,7 +80,7 @@ namespace NekoVampire.Web.OAuth
             this.authorizeURL = authorizeURL;
         }
 
-        public OAuthAccess(string consumerKey, string consumerSecret, string requestTokenURL, string accessTokenURL, string authorizeURL, string token, SecureString tokenSecret)
+        public OAuthAccess(string consumerKey, string consumerSecret, string requestTokenURL, string accessTokenURL, string authorizeURL, string token, string tokenSecret)
             : this(consumerKey, consumerSecret, requestTokenURL, accessTokenURL, authorizeURL)
         {
             this.AccessToken = token;
@@ -120,10 +121,7 @@ namespace NekoVampire.Web.OAuth
                 }
             }
             requestToken = response[OAuthTokenKey];
-            requestTokenSecret = new SecureString();
-            foreach (var c in response[OAuthTokenSecretKey].ToCharArray())
-                requestTokenSecret.AppendChar(c);
-            requestTokenSecret.MakeReadOnly();
+            requestTokenSecret = response[OAuthTokenSecretKey];
 
             return authorizeURL + "?" + OAuthTokenKey + "=" + RequestUtility.EscapeUriString(requestToken);
         }
@@ -162,23 +160,14 @@ namespace NekoVampire.Web.OAuth
                 }
             }
             accessToken = response[OAuthTokenKey];
-            accessTokenSecret = new SecureString();
-            foreach (var c in response[OAuthTokenSecretKey].ToCharArray())
-                accessTokenSecret.AppendChar(c);
-            accessTokenSecret.MakeReadOnly();
+            accessTokenSecret = response[OAuthTokenSecretKey];
 
             return;
         }
 
-        protected string GenerateSignature(string url, string method, List<QueryParameter> query, SecureString tokenSecret)
+        protected string GenerateSignature(string url, string method, List<QueryParameter> query, string tokenSecret)
         {
-            StringBuilder key = new StringBuilder(RequestUtility.EscapeUriString(consumerSecret)).Append("&");
-            if (tokenSecret != null)
-            {
-                var bstr = Marshal.SecureStringToBSTR(tokenSecret);
-                key.Append(RequestUtility.EscapeUriString(Marshal.PtrToStringBSTR(bstr)));
-                Marshal.ZeroFreeBSTR(bstr);
-            }
+            StringBuilder key = new StringBuilder(RequestUtility.EscapeUriString(consumerSecret)).Append("&").Append(RequestUtility.EscapeUriString(tokenSecret));
             var key_byte = Encoding.ASCII.GetBytes(key.ToString());
             HMACSHA1 hmac = new HMACSHA1(key_byte);
             query.Sort();
@@ -197,7 +186,7 @@ namespace NekoVampire.Web.OAuth
             return GenerateSignature(url, method, OAuthParameter, null);
         }
 
-        protected string GenerateSignature(string url, string method, IDictionary<string, string> OAuthParameter, SecureString tokenSecret)
+        protected string GenerateSignature(string url, string method, IDictionary<string, string> OAuthParameter, string tokenSecret)
         {
             List<QueryParameter> query = new List<QueryParameter>();
             if (OAuthParameter != null)
@@ -206,7 +195,7 @@ namespace NekoVampire.Web.OAuth
             return GenerateSignature(url, method, query, tokenSecret);
         }
 
-        protected string GenerateSignature(string url, string method, IDictionary<string, string> OAuthParameter, IDictionary<string, string> queryDictionary, SecureString tokenSecret)
+        protected string GenerateSignature(string url, string method, IDictionary<string, string> OAuthParameter, IDictionary<string, string> queryDictionary, string tokenSecret)
         {
             List<QueryParameter> query = new List<QueryParameter>();
             if (OAuthParameter != null)
@@ -223,11 +212,11 @@ namespace NekoVampire.Web.OAuth
         {
             Dictionary<string, string> dic = new Dictionary<string, string>();
             StringBuilder str = new StringBuilder("OAuth ");
-            foreach (var data in new SortedDictionary<string, string>(OAuthParameter))
+            foreach (var data in new Dictionary<string, string>(OAuthParameter))
                 str.AppendFormat("{0}=\"{1}\",", RequestUtility.EscapeUriString(data.Key), RequestUtility.EscapeUriString(data.Value));
             str.Remove(str.Length - 1, 1);
             dic.Add("Authorization", str.ToString());
-            return dic;
+            return (Dictionary<string, string>)dic.Sort();
         }
 
         protected string GenereteNonce()

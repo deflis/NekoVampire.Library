@@ -56,16 +56,12 @@ namespace NekoVampire.Web
         /// <summary>NetworkCredentialオブジェクト</summary>
         public NetworkCredential Credentials;
 
-        /// <summary>クッキーコンテナ</summary>
-        public CookieContainer Cookie;
-
         /// <summary>
         /// Requestを初期化する
         /// </summary>
         public Request()
         {
             Credentials = new NetworkCredential();
-            Cookie = new CookieContainer();
         }
 
         /// <summary>
@@ -76,53 +72,6 @@ namespace NekoVampire.Web
         public Request(string userName, string password)
         {
             Credentials = new NetworkCredential(userName, password);
-            Cookie = new CookieContainer();
-        }
-
-        /// <summary>
-        /// Requestを初期化する
-        /// </summary>
-        /// <param name="cookie">クッキー</param>
-        /// <param name="userName">ユーザーID</param>
-        /// <param name="password">パスワード</param>
-        public Request(string userName, SecureString password)
-        {
-            Credentials = new NetworkCredential(userName, Marshal.PtrToStringBSTR(Marshal.SecureStringToBSTR(password)));
-            Cookie = new CookieContainer();
-        }
-
-        /// <summary>
-        /// Requestを初期化する
-        /// </summary>
-        /// <param name="cookie">クッキー</param>
-        public Request(CookieContainer cookie)
-        {
-            Credentials = new NetworkCredential();
-            Cookie = cookie;
-        }
-
-        /// <summary>
-        /// Requestを初期化する
-        /// </summary>
-        /// <param name="cookie">クッキー</param>
-        /// <param name="userName">ユーザーID</param>
-        /// <param name="password">パスワード</param>
-        public Request(CookieContainer cookie, string userName, string password)
-        {
-            Credentials = new NetworkCredential(userName, password);
-            Cookie = cookie;
-        }
-
-        /// <summary>
-        /// Requestを初期化する
-        /// </summary>
-        /// <param name="cookie">クッキー</param>
-        /// <param name="userName">ユーザーID</param>
-        /// <param name="password">パスワード</param>
-        public Request(CookieContainer cookie, string userName, SecureString password)
-        {
-            Credentials = new NetworkCredential(userName, Marshal.PtrToStringBSTR(Marshal.SecureStringToBSTR(password)));
-            Cookie = cookie;
         }
 
         /// <summary>ユーザー名</summary>
@@ -151,23 +100,6 @@ namespace NekoVampire.Web
             }
         }
 
-        /// <summary>パスワード</summary>
-        public SecureString SecurePassword
-        {
-            get
-            {
-                var password = new SecureString();
-                foreach (char c in Credentials.Password.ToCharArray())
-                    password.AppendChar(c);
-                password.IsReadOnly();
-                return password;
-            }
-            set
-            {
-                Credentials.Password = Marshal.PtrToStringBSTR(Marshal.SecureStringToBSTR(value));
-            }
-        }
-
         /// <summary>HTTPリクエストを行います</summary>
         /// <param name="url">URL</param>
         /// <param name="method">HTTPメソッド</param>
@@ -186,7 +118,6 @@ namespace NekoVampire.Web
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
             req.Method = method;
             req.Credentials = Credentials;
-            req.CookieContainer = Cookie;
             req.IfModifiedSince = since;
 
             if (headers != null)
@@ -329,7 +260,6 @@ namespace NekoVampire.Web
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
             req.Method = method;
             req.Credentials = Credentials;
-            req.CookieContainer = Cookie;
             req.IfModifiedSince = since;
 
             if (headers != null)
@@ -502,7 +432,6 @@ namespace NekoVampire.Web
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
             req.Method = "POST";
             req.Credentials = Credentials;
-            req.CookieContainer = Cookie;
 
             if (postData != null)
             {
