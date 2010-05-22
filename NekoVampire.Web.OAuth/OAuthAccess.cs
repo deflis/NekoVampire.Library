@@ -271,6 +271,9 @@ namespace NekoVampire.Web.OAuth
 
         public void HttpRequest(string url, string method, DateTime since, IDictionary<string, string> postData, Encoding enc, IDictionary<string, string> headers, Action<Stream> invoker)
         {
+            if (!this.HasAccessToken)
+                throw new InvalidOperationException("トークンを取得していません。");
+
             Dictionary<string, string> head = null;
 
             var uri = new Uri(url);
@@ -279,15 +282,21 @@ namespace NekoVampire.Web.OAuth
                 queryDictionary = new Dictionary<string, string>(postData);
             else
                 queryDictionary = new Dictionary<string, string>();
-            foreach (string query in uri.GetComponents(UriComponents.Query, UriFormat.UriEscaped).Split('&'))
+
+            var queryString = uri.GetComponents(UriComponents.Query, UriFormat.UriEscaped);
+            if (queryString.Length != 0)
             {
-                if (query.IndexOf('=') > -1)
+                foreach (string query in queryString.Split('&'))
                 {
-                    string[] qs = query.Split('=');
-                    queryDictionary.Add(Uri.UnescapeDataString(qs[0]), Uri.UnescapeDataString(qs[1]));
+                    if (query != "")
+                        if (query.IndexOf('=') > -1)
+                        {
+                            string[] qs = query.Split('=');
+                            queryDictionary.Add(Uri.UnescapeDataString(qs[0]), Uri.UnescapeDataString(qs[1]));
+                        }
+                        else
+                            queryDictionary.Add(Uri.UnescapeDataString(query), "");
                 }
-                else
-                    queryDictionary.Add(Uri.UnescapeDataString(query), "");
             }
 
             Dictionary<string, string> OAuthParameter = new Dictionary<string, string>();
@@ -300,7 +309,8 @@ namespace NekoVampire.Web.OAuth
             OAuthParameter.Add(OAuthSignatureKey, GenerateSignature(url, method, OAuthParameter, queryDictionary, accessTokenSecret));
 
             head = CreateAuthorizationHeader(url, OAuthParameter);
-            head.AddRange(headers);
+            if (headers != null)
+                head.AddRange(headers);
 
             try
             {

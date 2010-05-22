@@ -130,7 +130,6 @@ namespace NekoVampire.Web
                 req.ContentType = "application/x-www-form-urlencoded";
                 req.ContentLength = data.Length;
 
-                req.ServicePoint.Expect100Continue = false;
                 try
                 {
                     using (Stream reqStream = req.GetRequestStream())

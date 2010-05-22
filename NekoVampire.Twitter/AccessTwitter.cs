@@ -11,15 +11,20 @@ namespace NekoVampire.TwitterAccess
     public class AccessTwitter : OAuthAccess
     {
         private const string API = "http://twitter.com/";
+        private const string APIv1 = "http://api.twitter.com/1/";
 
         #region コンストラクタ
         public AccessTwitter(string consumerKey, string consumerSecret)
             : base(consumerKey, consumerSecret, API + "oauth/request_token", API + "oauth/access_token", API + "oauth/authorize")
-        { }
+        {
+            System.Net.ServicePointManager.Expect100Continue = false;
+        }
 
         public AccessTwitter(string consumerKey, string consumerSecret, string token, string tokenSecret)
             : base(consumerKey, consumerSecret, API + "oauth/request_token", API + "oauth/access_token", API + "oauth/authorize", token, tokenSecret)
-        { }
+        {
+            System.Net.ServicePointManager.Expect100Continue = false;
+        }
         #endregion
         
         #region GetTimeLine
@@ -30,7 +35,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="invoker"></param>
         public void GetTimeLine(Action<Stream> invoker)
         {
-            string url = API + "statuses/friends_timeline.xml";
+            string url = APIv1 + "statuses/home_timeline.xml";
 
             try
             {
@@ -48,7 +53,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="page">ページ番号</param>
         public void GetTimeLine(int page, Action<Stream> invoker)
         {
-            string url = API + "statuses/friends_timeline.xml?page=" + page;
+            string url = APIv1 + "statuses/home_timeline.xml?page=" + page;
 
             try
             {
@@ -67,7 +72,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="count">取得件数(200まで)</param>
         public void GetTimeLine(int page, int count, Action<Stream> invoker)
         {
-            string url = API + "statuses/friends_timeline.xml?page=" + page + "&count=" + count;
+            string url = APIv1 + "statuses/home_timeline.xml?page=" + page + "&count=" + count;
 
             try
             {
@@ -86,7 +91,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="since">日時</param>
         public void GetTimeLine(int page, DateTime since, Action<Stream> invoker)
         {
-            string url = API + "statuses/friends_timeline.xml?page=" + page;
+            string url = APIv1 + "statuses/home_timeline.xml?page=" + page;
 
             try
             {
@@ -106,7 +111,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="count">取得件数</param>
         public void GetTimeLine(int page, int count, DateTime since, Action<Stream> invoker)
         {
-            string url = API + "statuses/friends_timeline.xml?page=" + page + "&count=" + count;
+            string url = APIv1 + "statuses/home_timeline.xml?page=" + page + "&count=" + count;
 
             try
             {
@@ -123,7 +128,7 @@ namespace NekoVampire.TwitterAccess
         /// <summary>自分に対する返信(冒頭が @ユーザ名 で始まるステータス)の一覧を取得する (最大20件)</summary>
         public void GetReplies(Action<Stream> invoker)
         {
-            string url = API + "statuses/mentions.xml";
+            string url = APIv1 + "statuses/mentions.xml";
 
             try
             {
@@ -139,7 +144,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="page">ページ番号</param>
         public void GetReplies(int page, Action<Stream> invoker)
         {
-            string url = API + "statuses/mentions.xml?page=" + page;
+            string url = APIv1 + "statuses/mentions.xml?page=" + page;
 
             try
             {
@@ -156,7 +161,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="count">取得件数</param>
         public void GetReplies(int page, int count, Action<Stream> invoker)
         {
-            string url = API + "statuses/mentions.xml?page=" + page + "&count=" + count;
+            string url = APIv1 + "statuses/mentions.xml?page=" + page + "&count=" + count;
 
             try
             {
@@ -173,7 +178,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="since">日時</param>
         public void GetReplies(int page, DateTime since, Action<Stream> invoker)
         {
-            string url = API + "statuses/mentions.xml?page=" + page;
+            string url = APIv1 + "statuses/mentions.xml?page=" + page;
 
             try
             {
@@ -191,7 +196,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="count">取得件数</param>
         public void GetReplies(int page, int count, DateTime since, Action<Stream> invoker)
         {
-            string url = API + "statuses/mentions.xml?page=" + page + "&count=" + count;
+            string url = APIv1 + "statuses/mentions.xml?page=" + page + "&count=" + count;
 
             try
             {
@@ -207,7 +212,7 @@ namespace NekoVampire.TwitterAccess
         /// <summary>自分の friend の過去24時間以内に update されたステータスから最大20件を取得する。</summary>
         public void GetUserTimeLine(string user, Action<Stream> invoker)
         {
-            string url = API + "statuses/user_timeline/" + user + ".xml";
+            string url = APIv1 + "statuses/user_timeline/" + user + ".xml";
 
             try
             {
@@ -223,7 +228,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="page">ページ番号</param>
         public void GetUserTimeLine(string user, int page, Action<Stream> invoker)
         {
-            string url = API + "statuses/user_timeline/" + user + ".xml?page=" + page;
+            string url = APIv1 + "statuses/user_timeline/" + user + ".xml?page=" + page;
 
             try
             {
@@ -240,7 +245,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="count">取得件数</param>
         public void GetUserTimeLine(string user, int page, int count, Action<Stream> invoker)
         {
-            string url = API + "statuses/user_timeline/" + user + ".xml?page=" + page + "&count=" + count;
+            string url = APIv1 + "statuses/user_timeline/" + user + ".xml?page=" + page + "&count=" + count;
 
             try
             {
@@ -257,7 +262,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="since">日時</param>
         public void GetUserTimeLine(string user, int page, DateTime since, Action<Stream> invoker)
         {
-            string url = API + "statuses/user_timeline/" + user + ".xml?page=" + page;
+            string url = APIv1 + "statuses/user_timeline/" + user + ".xml?page=" + page;
 
             try
             {
@@ -275,7 +280,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="count">取得件数</param>
         public void GetUserTimeLine(string user, int page, int count, DateTime since, Action<Stream> invoker)
         {
-            string url = API + "statuses/user_timeline/" + user + ".xml?page=" + page + "&count=" + count;
+            string url = APIv1 + "statuses/user_timeline/" + user + ".xml?page=" + page + "&count=" + count;
 
             try
             {
@@ -295,7 +300,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="status">ステータス</param>
         public void SendUpdate(string status, Action<Stream> invoker)
         {
-            string url = API + "statuses/update.xml";
+            string url = APIv1 + "statuses/update.xml";
             Dictionary<string,string> postData = new Dictionary<string,string>();
             postData.Add("status", status);
 
@@ -314,7 +319,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="status">ステータス</param>
         public void SendUpdate(string status, string inReplyToStatusId, Action<Stream> invoker)
         {
-            string url = API + "statuses/update.xml";
+            string url = APIv1 + "statuses/update.xml";
             Dictionary<string, string> postData = new Dictionary<string, string>();
             postData.Add("status", status);
             postData.Add("in_reply_to_status_id", inReplyToStatusId);
@@ -334,7 +339,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="id">ステータスID</param>
         public void DestroyStatus(string id, Action<Stream> invoker)
         {
-            string url = API + "statuses/destroy/" + id + ".xml";
+            string url = APIv1 + "statuses/destroy/" + id + ".xml";
 
             try
             {
@@ -353,7 +358,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="invoker"></param>
         public void CreateFav(string id, Action<Stream> invoker)
         {
-            string url = API + "favorites/create/" + id + ".xml";
+            string url = APIv1 + "favorites/create/" + id + ".xml";
 
             try
             {
@@ -372,7 +377,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="invoker"></param>
         public void DestroyFav(string id, Action<Stream> invoker)
         {
-            string url = API + "favorites/destroy/" + id + ".xml";
+            string url = APIv1 + "favorites/destroy/" + id + ".xml";
 
             try
             {
@@ -386,7 +391,7 @@ namespace NekoVampire.TwitterAccess
 
         public void ShowUser(string user, Action<Stream> invoker)
         {
-            string url = API + "users/show/" + user + ".xml";
+            string url = APIv1 + "users/show/" + user + ".xml";
 
             try
             {
@@ -400,7 +405,7 @@ namespace NekoVampire.TwitterAccess
 
         public void CreateFriend(string user, Action<Stream> invoker)
         {
-            string url = API + "friendships/create/" + user + ".xml";
+            string url = APIv1 + "friendships/create/" + user + ".xml";
 
             try
             {
@@ -414,7 +419,7 @@ namespace NekoVampire.TwitterAccess
 
         public void DestroyFriend(string user, Action<Stream> invoker)
         {
-            string url = API + "friendships/destroy/" + user + ".xml";
+            string url = APIv1 + "friendships/destroy/" + user + ".xml";
 
             try
             {
@@ -428,7 +433,7 @@ namespace NekoVampire.TwitterAccess
 
         public void ExistFriend(string user_a, string user_b, Action<Stream> invoker)
         {
-            string url = API + "friendships/exists.xml"
+            string url = APIv1 + "friendships/exists.xml"
                 + "?user_a=" + user_a
                 + "&user_b=" + user_b;
 
@@ -444,7 +449,7 @@ namespace NekoVampire.TwitterAccess
 
         public void GetFriends(Action<Stream> invoker)
         {
-            string url = API + "friends/ids.xml";
+            string url = APIv1 + "friends/ids.xml";
 
             try
             {
@@ -458,7 +463,7 @@ namespace NekoVampire.TwitterAccess
 
         public void GetFriends(string id, Action<Stream> invoker)
         {
-            string url = API + "friends/ids/" + id + ".xml";
+            string url = APIv1 + "friends/ids/" + id + ".xml";
 
             try
             {
@@ -472,7 +477,7 @@ namespace NekoVampire.TwitterAccess
 
         public void GetFollowers(Action<Stream> invoker)
         {
-            string url = API + "followers/ids.xml";
+            string url = APIv1 + "followers/ids.xml";
 
             try
             {
@@ -486,7 +491,7 @@ namespace NekoVampire.TwitterAccess
 
         public void GetFollowers(string id, Action<Stream> invoker)
         {
-            string url = API + "followers/ids/" + id + ".xml";
+            string url = APIv1 + "followers/ids/" + id + ".xml";
 
             try
             {
@@ -502,7 +507,7 @@ namespace NekoVampire.TwitterAccess
         /// <summary>自分宛てのダイレクトメッセージの一覧を取得する (最大20件)</summary>
         public void GetDirectMessage(Action<Stream> invoker)
         {
-            string url = API + "direct_messages.xml";
+            string url = APIv1 + "direct_messages.xml";
 
             try
             {
@@ -518,7 +523,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="page">ページ番号</param>
         public void GetDirectMessage(int page, Action<Stream> invoker)
         {
-            string url = API + "direct_messages.xml?page=" + page;
+            string url = APIv1 + "direct_messages.xml?page=" + page;
 
             try
             {
@@ -535,7 +540,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="count">取得件数</param>
         public void GetDirectMessage(int page, int count, Action<Stream> invoker)
         {
-            string url = API + "direct_messages.xml?page=" + page + "&count=" + count;
+            string url = APIv1 + "direct_messages.xml?page=" + page + "&count=" + count;
 
             try
             {
@@ -552,7 +557,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="since">日時</param>
         public void GetDirectMessage(int page, DateTime since, Action<Stream> invoker)
         {
-            string url = API + "direct_messages.xml?page=" + page;
+            string url = APIv1 + "direct_messages.xml?page=" + page;
 
             try
             {
@@ -570,7 +575,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="since">日時</param>
         public void GetDirectMessage(int page, int count, DateTime since, Action<Stream> invoker)
         {
-            string url = API + "direct_messages.xml?page=" + page + "&count=" + count;
+            string url = APIv1 + "direct_messages.xml?page=" + page + "&count=" + count;
 
             try
             {
@@ -587,7 +592,7 @@ namespace NekoVampire.TwitterAccess
         /// <summary>自分が送信したダイレクトメッセージの一覧を取得する (最大20件)</summary>
         public void GetDirectMessageSent(Action<Stream> invoker)
         {
-            string url = API + "direct_messages/sent.xml";
+            string url = APIv1 + "direct_messages/sent.xml";
 
             try
             {
@@ -603,7 +608,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="page">ページ番号</param>
         public void GetDirectMessageSent(int page, Action<Stream> invoker)
         {
-            string url = API + "direct_messages/sent.xml?page=" + page;
+            string url = APIv1 + "direct_messages/sent.xml?page=" + page;
 
             try
             {
@@ -620,7 +625,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="count">取得件数</param>
         public void GetDirectMessageSent(int page, int count, Action<Stream> invoker)
         {
-            string url = API + "direct_messages/sent.xml?page=" + page + "&count=" + count;
+            string url = APIv1 + "direct_messages/sent.xml?page=" + page + "&count=" + count;
 
             try
             {
@@ -637,7 +642,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="since">日時</param>
         public void GetDirectMessageSent(int page, DateTime since, Action<Stream> invoker)
         {
-            string url = API + "direct_messages/sent.xml?page=" + page;
+            string url = APIv1 + "direct_messages/sent.xml?page=" + page;
 
             try
             {
@@ -655,7 +660,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="count">取得件数</param>
         public void GetDirectMessageSent(int page, int count, DateTime since, Action<Stream> invoker)
         {
-            string url = API + "direct_messages/sent.xml?page=" + page + "&count=" + count;
+            string url = APIv1 + "direct_messages/sent.xml?page=" + page + "&count=" + count;
 
             try
             {
@@ -672,7 +677,7 @@ namespace NekoVampire.TwitterAccess
         /// <param name="status">ステータス</param>
         public void SendDM(string user, string text, Action<Stream> invoker)
         {
-            string url = API + "direct_messages/new.xml";
+            string url = APIv1 + "direct_messages/new.xml";
             Dictionary<string, string> postData = new Dictionary<string, string>();
             postData.Add("user", user);
             postData.Add("text", text);
